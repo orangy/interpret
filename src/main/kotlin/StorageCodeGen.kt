@@ -16,31 +16,33 @@ trait Storage {
 
 class UnsupportedPropertyTypeException(message: String) : Exception(message)
 
-class StorageProperty<T>(val propertyType: Class<T>) {
-    fun get(storage: Storage, property: String): T {
+abstract class EntityBackend(val storage : Storage)
+
+class EntityBackendProperty<T>(val propertyType: Class<T>) {
+    fun get(backend: EntityBackend, property: String): T {
         return when (propertyType.getSimpleName()) {
-            "Integer" -> storage.get(property)
-            "Long" -> storage.get(property)
-            "String" -> storage.get(property)
-            "Short" -> storage.get(property)
-            "Double" -> storage.get(property)
-            "Byte" -> storage.get(property)
-            "Character" -> storage.get(property)
-            "Boolean" -> storage.get(property)
-            else -> storage.get(property, propertyType)
+            "Integer" -> backend.storage.get(property)
+            "Long" -> backend.storage.get(property)
+            "String" -> backend.storage.get(property)
+            "Short" -> backend.storage.get(property)
+            "Double" -> backend.storage.get(property)
+            "Byte" -> backend.storage.get(property)
+            "Character" -> backend.storage.get(property)
+            "Boolean" -> backend.storage.get(property)
+            else -> backend.storage.get(property, propertyType)
         } as T
     }
-    fun set(storage: Storage, property: String, value: T) {
+    fun set(backend: EntityBackend, property: String, value: T) {
         return when (propertyType.getSimpleName()) {
-            "Integer" -> storage.set(property, value as Int)
-            "Long" -> storage.set(property, value as Long)
-            "Double" -> storage.set(property, value as Double)
-            "Byte" -> storage.set(property, value as Byte)
-            "String" -> storage.set(property, value as String)
-            "Short" -> storage.set(property, value as Short)
-            "Character" -> storage.set(property, value as Char)
-            "Boolean" -> storage.set(property, value as Boolean)
-            else -> storage.set(property, propertyType, value)
+            "Integer" -> backend.storage.set(property, value as Int)
+            "Long" -> backend.storage.set(property, value as Long)
+            "Double" -> backend.storage.set(property, value as Double)
+            "Byte" -> backend.storage.set(property, value as Byte)
+            "String" -> backend.storage.set(property, value as String)
+            "Short" -> backend.storage.set(property, value as Short)
+            "Character" -> backend.storage.set(property, value as Char)
+            "Boolean" -> backend.storage.set(property, value as Boolean)
+            else -> backend.storage.set(property, propertyType, value)
         }
     }
 }
@@ -51,13 +53,13 @@ class EmitClassLoader(parent: ClassLoader) : ClassLoader(parent) {
     }
 }
 
-class Emitter(val emitKlass: String, val protoName: String) : ClassVisitor(Opcodes.ASM4) {
+class BackendEmitter(val emitKlass: String, val protoName: String) : ClassVisitor(Opcodes.ASM4) {
     val writer = ClassWriter(0)
     val klassBuilder = writer// TraceClassVisitor(writer, ASMifier(), PrintWriter(System.out))
     val properties = HashMap<String, String>()
     val backendEntityKlass = javaClass<Storage>().getName().replace(".", "/")
-    val backendPropertyKlass = javaClass<StorageProperty<*>>().getName().replace(".", "/")
-    val backendKlass = javaClass<Storage>().getName().replace(".", "/")
+    val backendPropertyKlass = javaClass<EntityBackendProperty<*>>().getName().replace(".", "/")
+    val backendKlass = javaClass<EntityBackend>().getName().replace(".", "/")
     val backendPropertyType = Type.getObjectType(backendPropertyKlass)!!.getDescriptor()!!
 
     private fun getBoxedType(klass: Type): Type =
@@ -194,7 +196,7 @@ class Emitter(val emitKlass: String, val protoName: String) : ClassVisitor(Opcod
     }
 
     override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
-        klassBuilder.visit(V1_7, ACC_FINAL + ACC_SUPER, emitKlass, null, javaClass<Storage>().getName().replace(".", "/"), array(protoName))
+        klassBuilder.visit(V1_7, ACC_FINAL + ACC_SUPER, emitKlass, null, javaClass<EntityBackend>().getName().replace(".", "/"), array(protoName))
         super<ClassVisitor>.visit(version, access, name, signature, superName, interfaces)
     }
 
@@ -227,11 +229,11 @@ fun emitWrapper<T>(klass: Class<T>): Constructor<*> {
     }
 
     val protoName = klass.getName()
-    val emitName = protoName + "\$storage"
+    val emitName = protoName + "\$backend"
     val classFile = klass.getName().replace('.', '/') + ".class"
     val parentClassLoader = klass.getClassLoader()!!
     val reader = ClassReader(parentClassLoader.getResourceAsStream(classFile)!!)
-    val emitter = Emitter(emitName.replace(".", "/"), protoName.replace(".", "/"))
+    val emitter = BackendEmitter(emitName.replace(".", "/"), protoName.replace(".", "/"))
     reader.accept(emitter, 0)
     val classLoader = EmitClassLoader(parentClassLoader)
     val emitKlass = classLoader.defineClass(emitName, emitter.getBytes())!!

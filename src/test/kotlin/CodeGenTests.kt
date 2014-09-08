@@ -28,6 +28,8 @@ fun Map<String, Any>.toStorage(): Storage {
     val map = this
     return object : Storage {
         override fun get(property: String): Any {
+            if (property !in map)
+                throw IllegalAccessException("property $property not found")
             return map.get(property)!!
         }
         override fun set(property: String, value: Any) {
@@ -43,18 +45,8 @@ fun Map<String, Any>.toStorage(): Storage {
 }
 
 class CodeGenTests {
-    /* class TestGen {
-         fun test() {
-         }
-     }
-
-     Test fun asm_dump() {
-         dump(javaClass<TestGen>())
-         fail()
-     }*/
-
     Test fun given_database_and_interface_with_string_on_load_should_create_class() {
-        val entity = mapOf("value" to "name").toStorage()
+        val entity = mapOf("name" to "value").toStorage()
         val named = entity.interpretAs(javaClass<Strings>())
         assertEquals("value", named.name)
     }
