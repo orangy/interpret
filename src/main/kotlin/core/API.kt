@@ -9,11 +9,11 @@ trait Storage {
 }
 
 fun Storage.interpretAs<T>(klass: Class<T>): T {
-    return emitWrapper(klass).newInstance(this) as T
+    return org.jetbrains.interpret.emitWrapper(klass).newInstance(this) as T
 }
 
 fun Iterable<Storage>.interpretAs<T>(klass: Class<T>): Iterable<T> {
-    val wrapper = emitWrapper(klass)
+    val wrapper = org.jetbrains.interpret.emitWrapper(klass)
     return map { wrapper.newInstance(it) as T }
 }
 
