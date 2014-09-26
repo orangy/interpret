@@ -61,7 +61,7 @@
         </dependency>
     </dependencies>
     <properties>
-        <kotlin.version>0.8.679</kotlin.version>
+        <kotlin.version>0.1-SNAPSHOT</kotlin.version>
     </properties>
 
 

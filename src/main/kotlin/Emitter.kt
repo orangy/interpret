@@ -2,56 +2,8 @@ package org.jetbrains.interpret
 
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.*
-import java.io.*
 import java.util.HashMap
 import java.lang.reflect.Constructor
-
-trait Storage {
-    fun get(property: String): Any
-    fun set(property: String, value: Any)
-
-    fun get(property: String, propertyType: Class<*>): Any
-    fun set(property: String, propertyType: Class<*>, value: Any)
-}
-
-class UnsupportedPropertyTypeException(message: String) : Exception(message)
-
-abstract class EntityBackend(val storage : Storage)
-
-class EntityBackendProperty<T>(val propertyType: Class<T>) {
-    fun get(backend: EntityBackend, property: String): T {
-        return when (propertyType.getSimpleName()) {
-            "Integer" -> backend.storage.get(property)
-            "Long" -> backend.storage.get(property)
-            "String" -> backend.storage.get(property)
-            "Short" -> backend.storage.get(property)
-            "Double" -> backend.storage.get(property)
-            "Byte" -> backend.storage.get(property)
-            "Character" -> backend.storage.get(property)
-            "Boolean" -> backend.storage.get(property)
-            else -> backend.storage.get(property, propertyType)
-        } as T
-    }
-    fun set(backend: EntityBackend, property: String, value: T) {
-        return when (propertyType.getSimpleName()) {
-            "Integer" -> backend.storage.set(property, value as Int)
-            "Long" -> backend.storage.set(property, value as Long)
-            "Double" -> backend.storage.set(property, value as Double)
-            "Byte" -> backend.storage.set(property, value as Byte)
-            "String" -> backend.storage.set(property, value as String)
-            "Short" -> backend.storage.set(property, value as Short)
-            "Character" -> backend.storage.set(property, value as Char)
-            "Boolean" -> backend.storage.set(property, value as Boolean)
-            else -> backend.storage.set(property, propertyType, value)
-        }
-    }
-}
-
-class EmitClassLoader(parent: ClassLoader) : ClassLoader(parent) {
-    public fun defineClass(name: String, b: ByteArray): Class<*>? {
-        return defineClass(name, b, 0, b.size)
-    }
-}
 
 class BackendEmitter(val emitKlass: String, val protoName: String) : ClassVisitor(Opcodes.ASM4) {
     val writer = ClassWriter(0)
@@ -201,8 +153,9 @@ class BackendEmitter(val emitKlass: String, val protoName: String) : ClassVisito
     }
 
     override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<out String>?): MethodVisitor? {
-        val name = name!!
-        val desc = desc!!
+        name!!
+        desc!!
+
         if (name.startsWith("get"))
             getProperty(name.drop(3), desc.dropWhile { it == '(' || it == ')' })
         else if (name.startsWith("set"))
@@ -210,37 +163,6 @@ class BackendEmitter(val emitKlass: String, val protoName: String) : ClassVisito
         return super<ClassVisitor>.visitMethod(access, name, desc, signature, exceptions)
     }
     fun getBytes(): ByteArray = writer.toByteArray()!!
-}
-
-fun Storage.interpretAs<T>(klass: Class<T>): T {
-    return emitWrapper(klass).newInstance(this) as T
-}
-
-fun Iterable<Storage>.interpretAs<T>(klass: Class<T>): Iterable<T> {
-    val wrapper = emitWrapper(klass)
-    return map { wrapper.newInstance(it) as T }
-}
-
-val emittedWrappers = HashMap<Class<*>, Constructor<*>>()
-fun emitWrapper<T>(klass: Class<T>): Constructor<*> {
-    val existingCtor = emittedWrappers.get(klass)
-    if (existingCtor != null) {
-        return existingCtor
-    }
-
-    val protoName = klass.getName()
-    val emitName = protoName + "\$backend"
-    val classFile = klass.getName().replace('.', '/') + ".class"
-    val parentClassLoader = klass.getClassLoader()!!
-    val reader = ClassReader(parentClassLoader.getResourceAsStream(classFile)!!)
-    val emitter = BackendEmitter(emitName.replace(".", "/"), protoName.replace(".", "/"))
-    reader.accept(emitter, 0)
-    val classLoader = EmitClassLoader(parentClassLoader)
-    val emitKlass = classLoader.defineClass(emitName, emitter.getBytes())!!
-    val ctor = emitKlass.getConstructor(javaClass<Storage>())
-    ctor.setAccessible(true)
-    emittedWrappers.put(klass, ctor)
-    return ctor
 }
 
 /*
