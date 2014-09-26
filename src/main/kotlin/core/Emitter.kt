@@ -5,7 +5,7 @@ import org.objectweb.asm.Opcodes.*
 import java.util.HashMap
 import java.lang.reflect.Constructor
 
-class BackendEmitter(val emitKlass: String, val protoName: String) : org.objectweb.asm.ClassVisitor(org.objectweb.asm.Opcodes.ASM4) {
+class BackendEmitter(val emitKlass: String, val protoName: String) : ClassVisitor(org.objectweb.asm.Opcodes.ASM4) {
     val writer = org.objectweb.asm.ClassWriter(0)
     val klassBuilder = writer// TraceClassVisitor(writer, ASMifier(), PrintWriter(System.out))
     val properties = java.util.HashMap<String, String>()
@@ -144,12 +144,12 @@ class BackendEmitter(val emitKlass: String, val protoName: String) : org.objectw
         ctor.visitEnd()
 
         klassBuilder.visitEnd()
-        org.objectweb.asm.ClassVisitor<org.objectweb.asm.ClassVisitor>.visitEnd()
+        super.visitEnd()
     }
 
     override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
         klassBuilder.visit(org.objectweb.asm.Opcodes.V1_7, org.objectweb.asm.Opcodes.ACC_FINAL + org.objectweb.asm.Opcodes.ACC_SUPER, emitKlass, null, javaClass<EntityBackend>().getName().replace(".", "/"), array(protoName))
-        org.objectweb.asm.ClassVisitor<org.objectweb.asm.ClassVisitor>.visit(version, access, name, signature, superName, interfaces)
+        super.visit(version, access, name, signature, superName, interfaces)
     }
 
     override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<out String>?): org.objectweb.asm.MethodVisitor? {
@@ -160,7 +160,7 @@ class BackendEmitter(val emitKlass: String, val protoName: String) : org.objectw
             getProperty(name.drop(3), desc.dropWhile { it == '(' || it == ')' })
         else if (name.startsWith("set"))
             setProperty(name.drop(3), desc.dropWhile { it == '(' }.takeWhile { it != ')' })
-        return org.objectweb.asm.ClassVisitor<org.objectweb.asm.ClassVisitor>.visitMethod(access, name, desc, signature, exceptions)
+        return super.visitMethod(access, name, desc, signature, exceptions)
     }
     fun getBytes(): ByteArray = writer.toByteArray()!!
 }

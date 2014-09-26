@@ -4,7 +4,6 @@ import org.junit.*
 import kotlin.test.*
 import java.util.Date
 import org.jetbrains.interpret.*
-import java.util.ArrayList
 
 trait Strings {
     var name: String
@@ -21,7 +20,7 @@ trait Logic {
 }
 
 trait Dates {
-    var created: Date
+    var created: String
 }
 
 trait Cascade {
@@ -52,12 +51,24 @@ class CodeGenTests {
     Test fun interpretAsCascade() {
         val entity = mapOf(
                 "numbers" to mapOf("count" to 1, "size" to 123L),
-                "dates" to mapOf("created" to Date(2014, 1, 1))
+                "dates" to mapOf("created" to "2014-12-1")
                           ).toStorage()
 
         val cascade = entity.interpretAs(javaClass<Cascade>())
         assertEquals(1, cascade.numbers.count)
         assertEquals(123L, cascade.numbers.size)
-        assertEquals(Date(2014, 1, 1), cascade.dates.created)
+        assertEquals("2014-12-1", cascade.dates.created)
+    }
+
+    Test fun interpretJson() {
+        val cascade = jsonStorage("""
+        {
+          numbers: { count:1, size:123 },
+          dates: { created: "2014-12-1" }
+        }
+        """).interpretAs(javaClass<Cascade>())
+        assertEquals(1, cascade.numbers.count)
+        assertEquals(123L, cascade.numbers.size)
+        assertEquals("2014-12-1", cascade.dates.created)
     }
 }
