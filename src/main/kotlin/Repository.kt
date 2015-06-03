@@ -6,7 +6,7 @@ import org.objectweb.asm.ClassReader
 
 class EmitClassLoader(parent: ClassLoader) : ClassLoader(parent) {
     public fun defineClass(name: String, b: ByteArray): Class<*>? {
-        return defineClass(name, b, 0, b.size)
+        return defineClass(name, b, 0, b.size())
     }
 }
 

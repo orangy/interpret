@@ -4,7 +4,7 @@ abstract class EntityBackend(val storage: Storage)
 
 class EntityBackendProperty<T>(val propertyType: Class<T>) {
     fun get(backend: EntityBackend, property: String): T {
-        return when (propertyType.getSimpleName()) {
+        val value: Any? = when (propertyType.getSimpleName()) {
             "Integer" -> backend.storage.get(property)
             "Long" -> backend.storage.get(property)
             "String" -> backend.storage.get(property)
@@ -14,8 +14,10 @@ class EntityBackendProperty<T>(val propertyType: Class<T>) {
             "Character" -> backend.storage.get(property)
             "Boolean" -> backend.storage.get(property)
             else -> backend.storage.get(property, propertyType)
-        } as T
+        }
+        return value as T
     }
+
     fun set(backend: EntityBackend, property: String, value: T) {
         return when (propertyType.getSimpleName()) {
             "Integer" -> backend.storage.set(property, value as Int)
