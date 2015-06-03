@@ -148,7 +148,7 @@ class BackendEmitter(val emitKlass: String, val protoName: String) : ClassVisito
     }
 
     override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
-        klassBuilder.visit(org.objectweb.asm.Opcodes.V1_7, org.objectweb.asm.Opcodes.ACC_FINAL + org.objectweb.asm.Opcodes.ACC_SUPER, emitKlass, null, javaClass<EntityBackend>().getName().replace(".", "/"), array(protoName))
+        klassBuilder.visit(org.objectweb.asm.Opcodes.V1_7, org.objectweb.asm.Opcodes.ACC_FINAL + org.objectweb.asm.Opcodes.ACC_SUPER, emitKlass, null, javaClass<EntityBackend>().getName().replace(".", "/"), arrayOf(protoName))
         super.visit(version, access, name, signature, superName, interfaces)
     }
 

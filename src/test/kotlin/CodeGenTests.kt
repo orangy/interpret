@@ -5,25 +5,25 @@ import kotlin.test.*
 import java.util.Date
 import org.jetbrains.interpret.*
 
-trait Strings {
+interface Strings {
     var name: String
 }
 
-trait Numbers {
+interface Numbers {
     val count: Int
     var size: Long
     val percent: Double
 }
 
-trait Logic {
+interface Logic {
     var yesno: Boolean
 }
 
-trait Dates {
+interface Dates {
     var created: String
 }
 
-trait Cascade {
+interface Cascade {
     val numbers: Numbers
     val dates: Dates
 }

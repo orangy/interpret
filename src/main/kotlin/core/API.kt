@@ -1,6 +1,6 @@
 package org.jetbrains.interpret
 
-trait Storage {
+interface Storage {
     fun get(property: String): Any
     fun set(property: String, value: Any)
 
@@ -9,11 +9,11 @@ trait Storage {
 }
 
 fun Storage.interpretAs<T>(klass: Class<T>): T {
-    return org.jetbrains.interpret.emitWrapper(klass).newInstance(this) as T
+    return emitWrapper(klass).newInstance(this) as T
 }
 
 fun Iterable<Storage>.interpretAs<T>(klass: Class<T>): Iterable<T> {
-    val wrapper = org.jetbrains.interpret.emitWrapper(klass)
+    val wrapper = emitWrapper(klass)
     return map { wrapper.newInstance(it) as T }
 }
 
